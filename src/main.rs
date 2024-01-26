@@ -39,7 +39,7 @@ fn handle_connection(mut stream: TcpStream) {
         println!("Received message!");
 
         // Adding a delay to allow plugging 2 concurrent connections
-        let delay = time::Duration::from_secs(2);
+        let delay = time::Duration::from_secs(20);
         thread::sleep(delay);
 
         stream.write_all(b"+PONG\r\n").expect("Could not respond")
