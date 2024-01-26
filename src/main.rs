@@ -1,18 +1,37 @@
-use std::{
-    io::{Read, Write},
+use std::io::Error;
+
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
-    thread, time,
 };
 
-fn main() {
-    println!("Logs from your program will appear here!");
+async fn execute_command(stream: TcpStream) -> Result<(), Error> {
+    let response = "+PONG\r\n";
+    let mut stream = stream;
+    let mut buf = [0; 1024];
+    while let Ok(n) = stream.read(&mut buf).await {
+        if n == 0 {
+            break;
+        }
+        stream.write_all(response.as_bytes()).await?;
+    }
+    Ok(())
+}
 
-    let listener = TcpListener::bind("127.0.0.1:6379").expect("Could not bind to port 6379");
+#[tokio::main]
+async fn main() {
+    let listener = TcpListener::bind("127.0.0.1:6379")
+        .await
+        .expect("failed to bind");
 
-    for stream in listener.incoming() {
+    loop {
+        let stream = listener.accept().await;
         match stream {
-            Ok(stream) => {
-                thread::spawn(|| handle_connection(stream));
+            Ok((_stream, _)) => {
+                println!("accepted new connection");
+                if let Err(e) = execute_command(_stream).await {
+                    println!("error: {}", e);
+                }
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -20,29 +39,4 @@ fn main() {
         }
     }
 }
-
-fn handle_connection(mut stream: TcpStream) {
-    println!("Accepted new connection");
-
-    let mut buf = [0; 512];
-
-    loop {
-        let bytes_read = stream
-            .read(&mut buf)
-            .expect("Could not read bytes from connection");
-
-        if bytes_read == 0 {
-            println!("Closing connection");
-            break;
-        }
-
-        println!("Received message!");
-
-        // Adding a delay to allow plugging 2 concurrent connections
-        let delay = time::Duration::from_secs(2);
-        thread::sleep(delay);
-
-        stream.write_all(b"+PONG\r\n").expect("Could not respond")
-    }
-}
-// timer put
+//using async/await
