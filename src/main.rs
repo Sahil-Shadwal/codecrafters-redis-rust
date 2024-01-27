@@ -219,3 +219,4 @@ mod test {
         assert_eq!(result, "foobar");
     }
 }
+//code failed  to compile well guess i'll have to find worl around
